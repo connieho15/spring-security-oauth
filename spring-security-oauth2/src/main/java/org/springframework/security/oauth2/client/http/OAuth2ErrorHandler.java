@@ -76,12 +76,17 @@ public class OAuth2ErrorHandler implements ResponseErrorHandler {
 		return HttpStatus.Series.CLIENT_ERROR.equals(response.getStatusCode().series())
 				|| this.errorHandler.hasError(response);
 	}
-
+	
 	public void handleError(final ClientHttpResponse response) throws IOException {
+		handleError(null, null, response);
+	}
+
+	@Override
+	public void handleError(URI url, HttpMethod method, ClientHttpResponse response) throws IOException {
 		if (!HttpStatus.Series.CLIENT_ERROR.equals(response.getStatusCode().series())) {
 			// We should only care about 400 level errors. Ex: A 500 server error shouldn't
 			// be an oauth related error.
-			errorHandler.handleError(response);
+			errorHandler.handleError(url, method, response);
 		}
 		else {
 			// Need to use buffered response because input stream may need to be consumed multiple times.
@@ -155,7 +160,7 @@ public class OAuth2ErrorHandler implements ResponseErrorHandler {
 				}
 
 				// then delegate to the custom handler
-				errorHandler.handleError(bufferedResponse);
+				errorHandler.handleError(url, method, bufferedResponse);
 			}
 			catch (InvalidTokenException ex) {
 				// Special case: an invalid token can be renewed so tell the caller what to do
@@ -169,7 +174,7 @@ public class OAuth2ErrorHandler implements ResponseErrorHandler {
 				}
 				// This is not an exception that is really understood, so allow our delegate
 				// to handle it in a non-oauth way
-				errorHandler.handleError(bufferedResponse);
+				errorHandler.handleError(url, method, bufferedResponse);
 			}
 		}
 	}
